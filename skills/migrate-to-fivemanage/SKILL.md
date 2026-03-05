@@ -1,3 +1,8 @@
+---
+name: migrate-to-fivemanage
+description: Migrate a FiveM resource from ox_lib logger or Discord webhook logging to Fivemanage fmsdk structured cloud logging — use when replacing legacy logging with the Fivemanage SDK.
+---
+
 # Skill: Migrate Logging to fmsdk
 
 ## Purpose

@@ -1,3 +1,8 @@
+---
+name: add-fmsdk-logging
+description: Instrument a FiveM resource with fmsdk structured cloud logging — use when adding logging, telemetry, or audit trails to a FiveM Lua resource using the Fivemanage SDK.
+---
+
 # Skill: Add Fivemanage SDK Logging to a FiveM Resource
 
 ## Purpose
