@@ -2,6 +2,48 @@
 
 This repository contains structured skill documents for AI coding assistants. Each skill defines rules, workflows, and reference material the AI should follow when helping FiveM server developers work with the [Fivemanage](https://fivemanage.com) SDK (`fmsdk`).
 
+## Installation
+
+These skills use the standard Agent Skills layout: `skills/<skill-name>/SKILL.md`. They can be installed with the [`skills`](https://www.npmjs.com/package/skills) CLI using `npx`.
+
+List the available skills:
+
+```bash
+npx skills add fivemanage/skills --list
+```
+
+Install all skills into the current project:
+
+```bash
+npx skills add fivemanage/skills --skill "*"
+```
+
+Install one skill:
+
+```bash
+npx skills add fivemanage/skills --skill add-fmsdk-logging
+```
+
+Install globally for VS Code / GitHub Copilot:
+
+```bash
+npx skills add fivemanage/skills --skill "*" --agent github-copilot --global
+```
+
+Install globally for OpenCode:
+
+```bash
+npx skills add fivemanage/skills --skill "*" --agent opencode --global
+```
+
+Install globally for Claude Code:
+
+```bash
+npx skills add fivemanage/skills --skill "*" --agent claude-code --global
+```
+
+After installing, restart your AI coding assistant or open a new session so it can discover the new skills.
+
 ## Skills
 
 ### `fivem-resource-logging`
