@@ -9,6 +9,8 @@ description: Instrument a FiveM resource with fmsdk structured cloud logging —
 
 Instrument a FiveM resource with structured cloud logging using the Fivemanage SDK (`fmsdk`). This skill covers **logging only** — not images, video, or audio.
 
+If the resource is a Qbox/QBX resource (`qbx_core`, `qbx_police`, `[qbx]/...`) or the user asks for Qbox-wide logging, prefer the `qbox-fmsdk-logging` skill. If the task is mainly choosing between passive listeners, direct instrumentation, or patch-based logging, use `fivem-resource-logging` first.
+
 ## Background
 
 ### fmsdk logging exports

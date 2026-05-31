@@ -9,6 +9,8 @@ description: Migrate a FiveM resource from ox_lib logger or Discord webhook logg
 
 Help FiveM developers migrate from legacy logging patterns — `ox_lib`'s `lib.logger` and Discord webhook logging — to the Fivemanage SDK (`fmsdk`) for structured cloud logging. This skill covers **logging only** — not images or video.
 
+If the migration target is a Qbox/QBX resource under `[qbx]/`, also use `qbox-fmsdk-logging` for Qbox-specific events, passive listener opportunities, and safe patch points.
+
 ## Background
 
 ### Sources to migrate

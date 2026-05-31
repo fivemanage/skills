@@ -4,6 +4,20 @@ This repository contains structured skill documents for AI coding assistants. Ea
 
 ## Skills
 
+### `fivem-resource-logging`
+Teaches the AI how to choose the right FiveM logging strategy before editing code.
+
+- Separates passive event listeners from direct instrumentation and patch-based logging
+- Defines what can and cannot be observed from outside a resource
+- Covers server/client boundaries, `fxmanifest.lua` dependencies, and safe metadata design
+
+### `qbox-fmsdk-logging`
+Teaches the AI how to add Fivemanage logging to Qbox/QBX resources, including resources under `[qbx]/`.
+
+- Covers known passive Qbox hooks: `qbx_core`, `qbx_police`, `qbx_management`, `qbx_bankrobbery`
+- Defines safe patching patterns for `lib.addCommand`, `lib.callback.register`, exports, and client-only admin actions
+- Includes event maps, module templates, and dashboard-oriented metadata guidance
+
 ### `add-fmsdk-logging`
 Teaches the AI how to instrument a FiveM resource with Fivemanage cloud logging from scratch.
 
@@ -22,6 +36,18 @@ Supported migration sources:
 
 ```
 skills/
+├── fivem-resource-logging/
+│   ├── SKILL.md
+│   └── references/
+│       └── passive-vs-patched.md
+│
+├── qbox-fmsdk-logging/
+│   ├── SKILL.md
+│   └── references/
+│       ├── qbox-event-map.md
+│       ├── patching-qbox-resources.md
+│       └── fm-qbox-module-template.md
+│
 ├── add-fmsdk-logging/
 │   ├── SKILL.md              # Workflow, rules, and examples
 │   └── references/
