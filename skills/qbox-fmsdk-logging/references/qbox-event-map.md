@@ -101,7 +101,7 @@ Use `warn` for robbery start, alarms, and power station hits. Use `info` for loo
 
 ## qbx_adminmenu
 
-Passive server events:
+Server events worth patching/logging directly:
 
 ```lua
 qbx_admin:server:sendReply(report, message)

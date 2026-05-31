@@ -51,7 +51,7 @@ This avoids changing the semantics of upstream events and makes the patch clearl
 
 ## Direct fmsdk vs internal audit event
 
-Prefer an internal audit event when maintaining an external logging resource like `fm-qbox`:
+Prefer an internal audit event when the user explicitly wants an external logging resource:
 
 ```lua
 TriggerEvent('fm-logs:server:qbx_adminmenu:adminAction', source, payload)

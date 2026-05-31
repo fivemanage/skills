@@ -1,13 +1,13 @@
 ---
 name: qbox-fmsdk-logging
-description: Qbox QBX Fivemanage logging for qbx_core and resources under [qbx]/ - use when adding fm-qbox modules, auditing qbx_* events, or patching Qbox commands/callbacks that cannot be passively listened to.
+description: Qbox QBX Fivemanage logging for qbx_core and resources under [qbx]/ - use when patching installed qbx_* resources, commands, callbacks, exports, and client/server actions with fmsdk logs.
 ---
 
 # Skill: Qbox Fivemanage Logging
 
 ## Purpose
 
-Help users add Fivemanage structured logging to Qbox/QBX servers and resources. Use this skill for resources named `qbx_*`, folders under `[qbx]/`, `qbx_core`, `qbx_police`, `qbx_management`, `qbx_bankrobbery`, `qbx_adminmenu`, or an `fm-qbox` logging integration resource.
+Help users add Fivemanage structured logging to Qbox/QBX servers and resources. Use this skill for resources named `qbx_*`, folders under `[qbx]/`, `qbx_core`, `qbx_police`, `qbx_management`, `qbx_bankrobbery`, or `qbx_adminmenu`.
 
 This skill assumes Lua resources and the Fivemanage SDK resource named `fmsdk`.
 
@@ -15,10 +15,10 @@ This skill assumes Lua resources and the Fivemanage SDK resource named `fmsdk`.
 
 Use this priority order:
 
-1. Prefer passive listeners in `fm-qbox` when Qbox already emits a server event.
-2. Use framework-level Qbox events when they provide better coverage than resource-specific events.
-3. Add tiny upstream patches only for commands, callbacks, exports, or client-only actions that cannot be observed externally.
-4. Keep upstream patches as `TriggerEvent(...)` audit hooks where possible, and keep actual fmsdk calls centralized in `fm-qbox`.
+1. Patch the installed Qbox resource directly at the point where the action succeeds.
+2. Add `fmsdk` as a dependency in that resource's `fxmanifest.lua` when adding direct `exports.fmsdk:*` calls.
+3. Use framework-level Qbox events only when patching a central resource like `qbx_core` gives better coverage than many individual patches.
+4. Do not create or update an `fm-qbox` wrapper/aggregator resource unless the user explicitly asks for one.
 
 ## Required Exploration
 
@@ -45,13 +45,13 @@ DropPlayer
 SetPlayerRoutingBucket
 ```
 
-Classify each action as passive, downstream-framework observable, or patch-required.
+Classify each action as a direct patch point, downstream-framework-covered action, or client-only action that needs a server bridge.
 
-## Known Passive Qbox Hooks
+## Known Qbox Patch Points
 
 ### qbx_core economy
 
-The best server-wide economy hook is:
+The best server-wide economy patch point is `qbx_core`'s money-change event path. Add a server-side listener in `qbx_core` or patch the money event emitter, then log via `fmsdk`:
 
 ```lua
 AddEventHandler('QBCore:Server:OnMoneyChange', function(source, moneyType, amount, actionType, reason)
@@ -75,7 +75,7 @@ This captures all `player.Functions.AddMoney`, `RemoveMoney`, and `SetMoney` cal
 
 ### qbx_management job/gang
 
-Useful passive hooks:
+Useful framework events to log from a direct Qbox patch:
 
 ```lua
 QBCore:Server:OnPlayerLoaded
@@ -91,7 +91,7 @@ These cover duty state, player job/gang changes, and job/gang definition updates
 
 ### qbx_police
 
-Common passive events include:
+Common server events worth patching directly in `qbx_police` include:
 
 ```lua
 police:server:JailPlayer
@@ -122,7 +122,7 @@ Some police events do not include final amounts. Pair them with `QBCore:Server:O
 
 ### qbx_bankrobbery
 
-Common passive events include:
+Common server events worth patching directly in `qbx_bankrobbery` include:
 
 ```lua
 qbx_bankrobbery:server:setBankState
@@ -139,7 +139,7 @@ Loot events identify bank/locker but may not include exact item/amount. Use `ox_
 
 ### qbx_adminmenu
 
-Passive server net events worth logging:
+Server net events worth patching directly in `qbx_adminmenu`:
 
 ```lua
 qbx_admin:server:sendReply
@@ -157,81 +157,37 @@ Patch-required or partially covered actions:
 - Client-only toggles: godmode, invisibility, vehicle godmode, infinite ammo, local no-clip state
 - Admin give-item through `ExecuteCommand('giveitem ...')` is better logged where the `giveitem` command is implemented
 
-## fm-qbox Module Pattern
+## Direct Qbox Resource Patch Pattern
 
-Use one server module per Qbox resource:
-
-```text
-fm-qbox/
-├── fxmanifest.lua
-├── config.lua
-└── server/modules/
-    ├── qbx_core.lua
-    ├── qbx_police.lua
-    ├── qbx_management.lua
-    ├── qbx_bankrobbery.lua
-    └── qbx_adminmenu.lua
-```
-
-Use a config section per module:
+When adding Qbox logging, patch the installed resource directly. Add a small local helper near the top of the server file or in a shared server logging file for that resource:
 
 ```lua
-Config.QbxAdminMenu = {
-    enabled = true,
-    dataset = 'admin',
-    events = {
-        reports = true,
-        playerActions = true,
-        administration = true,
-        playerData = true,
-        weapons = true,
-    }
-}
-```
-
-In modules, use a local helper:
-
-```lua
-local dataset = Config.QbxAdminMenu.dataset
+local logDataset = 'admin'
 
 local function log(level, message, metadata)
-    exports.fmsdk:Log(dataset, level, message, metadata)
+    exports.fmsdk:Log(logDataset, level, message, metadata)
 end
 ```
 
-## Patching Resources That Cannot Be Listened To
-
-When passive listening is impossible, add a tiny server-side audit event after authorization and success.
+Then add log calls after authorization and after the action succeeds.
 
 Example patch inside `qbx_adminmenu` command/callback code:
 
 ```lua
-TriggerEvent('fm-qbox:server:qbx_adminmenu:adminCarSaved', source, {
+log('warn', 'qbx_adminmenu.vehicle.adminCarSaved', {
+    playerSource = source,
     vehicleId = vehicleId,
     model = vehName,
     targetCitizenId = playerData.citizenid,
 })
 ```
 
-Then listen in `fm-qbox`:
-
-```lua
-AddEventHandler('fm-qbox:server:qbx_adminmenu:adminCarSaved', function(playerSource, data)
-    log('warn', 'qbx_adminmenu.vehicle.adminCarSaved', {
-        playerSource = playerSource,
-        vehicleId = data.vehicleId,
-        model = data.model,
-        targetCitizenId = data.targetCitizenId,
-    })
-end)
-```
-
 Patch rules:
 
 - Patch after permission checks.
 - Patch after the action succeeds.
-- Keep the patch to one `TriggerEvent` where possible.
-- Do not add `fmsdk` as an upstream dependency if central `fm-qbox` can listen to the audit event.
+- Keep the patch small and local to the action being audited.
+- Add `fmsdk` to the patched resource's `fxmanifest.lua` dependencies.
 - If logging denied attempts, use `warn` and include `denied = true` plus the failed permission.
 - For client-only actions, route to the server and validate ACE permissions if possible. If not fully verifiable, include `clientReported = true`.
 
@@ -253,14 +209,13 @@ Keep messages stable and put all dynamic values in metadata.
 
 After editing:
 
-1. Confirm the module is listed in `fxmanifest.lua`.
-2. Confirm the config section name matches the module code.
-3. Confirm no `exports.fmsdk` calls were added to client scripts.
-4. Confirm passive listeners use the same event parameter order as the target resource.
-5. If patching upstream Qbox resources, read the diff carefully to ensure behavior was not changed.
+1. Confirm `fmsdk` is listed in the patched resource's `fxmanifest.lua` dependencies.
+2. Confirm no direct `exports.fmsdk` calls were added to client scripts.
+3. Confirm log calls happen after permission checks and success checks.
+4. Confirm static messages and structured metadata.
+5. Read the diff carefully to ensure behavior was not changed.
 
 ## References
 
 - `references/qbox-event-map.md`
 - `references/patching-qbox-resources.md`
-- `references/fm-qbox-module-template.md`

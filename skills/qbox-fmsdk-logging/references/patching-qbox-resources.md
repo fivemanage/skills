@@ -4,42 +4,47 @@ Use this when a Qbox action cannot be observed from another resource.
 
 ## Good patch shape
 
-Add one internal audit event after the action succeeds:
+Add one direct `fmsdk` log call after the action succeeds:
 
 ```lua
-TriggerEvent('fm-qbox:server:<resource>:<action>', source, payload)
-```
-
-Example:
-
-```lua
--- After a successful admin permission change
-TriggerEvent('fm-qbox:server:qbx_adminmenu:permissionChanged', source, {
+exports.fmsdk:Warn('admin', 'qbx_adminmenu.player.permissionChanged', {
+    playerSource = source,
     targetSource = selectedPlayer.id,
     permission = input,
 })
 ```
 
-Then centralize the fmsdk call in `fm-qbox`:
+If the file needs multiple logs, add a tiny local helper near the top of the server file:
 
 ```lua
-AddEventHandler('fm-qbox:server:qbx_adminmenu:permissionChanged', function(playerSource, data)
-    exports.fmsdk:Warn('admin', 'qbx_adminmenu.player.permissionChanged', {
-        playerSource = playerSource,
-        targetSource = data.targetSource,
-        permission = data.permission,
-    })
-end)
+local logDataset = 'admin'
+
+local function log(level, message, metadata)
+    exports.fmsdk:Log(logDataset, level, message, metadata)
+end
 ```
 
-## Why not direct fmsdk everywhere?
+Then use it at the action site:
 
-Central audit events keep Qbox resources loosely coupled:
+```lua
+log('warn', 'qbx_adminmenu.player.permissionChanged', {
+    playerSource = source,
+    targetSource = selectedPlayer.id,
+    permission = input,
+})
+```
 
-- No `fmsdk` dependency in upstream resources.
-- One config controls datasets and event categories.
-- Logs can be disabled without modifying Qbox again.
-- Patches are small and easy to rebase when Qbox updates.
+## Dependency requirement
+
+When patching an existing Qbox resource with direct fmsdk calls, add `fmsdk` to that resource's `fxmanifest.lua` dependencies:
+
+```lua
+dependencies {
+    'fmsdk'
+}
+```
+
+If the resource already has `dependencies`, add `fmsdk` to the existing table instead of creating a duplicate block.
 
 ## Permission and success placement
 
@@ -61,7 +66,8 @@ if not success then return end
 If logging failed attempts is required, add a separate denied-attempt event:
 
 ```lua
-TriggerEvent('fm-qbox:server:qbx_adminmenu:deniedAction', source, {
+exports.fmsdk:Warn('admin', 'qbx_adminmenu.action.denied', {
+    playerSource = source,
     action = 'ban',
     permission = config.eventPerms.ban,
     denied = true,
@@ -81,13 +87,13 @@ Options:
 Client patch example:
 
 ```lua
-TriggerServerEvent('fm-qbox:server:qbx_adminmenu:clientOptionUsed', 'godmode', godmode)
+TriggerServerEvent('qbx_admin:server:logClientOptionUsed', 'godmode', godmode)
 ```
 
 Server listener example:
 
 ```lua
-RegisterNetEvent('fm-qbox:server:qbx_adminmenu:clientOptionUsed', function(action, enabled)
+RegisterNetEvent('qbx_admin:server:logClientOptionUsed', function(action, enabled)
     local src = source
     if not IsPlayerAceAllowed(src, 'admin') then return end
 
